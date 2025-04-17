@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .bg-tesla-gradient {
+    @apply bg-gradient-to-br from-white via-blue-50 to-indigo-100;
+  }
+  
+  .prediction-gradient {
+    @apply bg-gradient-to-r from-blue-500 to-indigo-600;
+  }
+  
+  .form-container {
+    @apply bg-white rounded-xl shadow-xl p-6 md:p-8 border border-gray-100;
+  }
+  
+  .input-group {
+    @apply space-y-2 mb-4;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
