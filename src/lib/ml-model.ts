@@ -1,5 +1,6 @@
 
 import { CarPredictionFormValues } from "@/components/car/CarPredictionForm";
+import { API_CONFIG } from "./api-config";
 
 /**
  * Car price prediction function that connects to a Python ML model API
@@ -10,8 +11,8 @@ export async function predictCarPrice(formValues: CarPredictionFormValues): Prom
   confidenceScore: number;
 }> {
   try {
-    // Call the Python ML model API
-    const response = await fetch('http://localhost:8000/predict', {
+    // Call the Python ML model API with the configured endpoint
+    const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICT}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
