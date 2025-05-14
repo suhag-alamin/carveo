@@ -7,14 +7,26 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CarPredictionFormValues } from "./CarPredictionForm";
 
+interface FeatureImportance {
+  name: string;
+  importance: number;
+}
+
 interface PredictionResultProps {
   prediction: number;
   confidenceScore: number; 
   formValues: CarPredictionFormValues;
   onNewPrediction: () => void;
+  featureImportance?: FeatureImportance[];
 }
 
-export function PredictionResult({ prediction, confidenceScore, formValues, onNewPrediction }: PredictionResultProps) {
+export function PredictionResult({ 
+  prediction, 
+  confidenceScore, 
+  formValues, 
+  onNewPrediction,
+  featureImportance 
+}: PredictionResultProps) {
   const [animatedPrice, setAnimatedPrice] = useState(0);
   const [animatedProgress, setAnimatedProgress] = useState(0);
 
@@ -65,8 +77,13 @@ export function PredictionResult({ prediction, confidenceScore, formValues, onNe
     maximumFractionDigits: 0 
   });
 
+  // If feature importance is not provided, use fallback data
   const getFeatureImportance = () => {
-    // Simulated feature importance - in a real application this would come from the model
+    if (featureImportance && featureImportance.length > 0) {
+      return featureImportance;
+    }
+    
+    // Fallback to hardcoded data if no feature importance provided
     return [
       { name: "Year", importance: 35 },
       { name: "Mileage", importance: 27 },

@@ -41,6 +41,7 @@ class CarData(BaseModel):
 class PredictionResponse(BaseModel):
     predictedPrice: int
     confidenceScore: float
+    featureImportance: list
 
 # Generate synthetic data for model training
 def generate_synthetic_data(n_samples=1000):
@@ -154,6 +155,62 @@ def train_model():
     
     return model, r2
 
+# Function to calculate feature importance
+def get_feature_importance(model, make, fuel_type, transmission, year, mileage):
+    # This is a simple feature importance calculation based on our synthetic model
+    # In a real ML model, you would extract this from the model coefficients or feature importances
+    
+    # Calculate feature importances
+    importances = [
+        {"name": "Year", "importance": 35 + np.random.randint(-5, 6)},
+        {"name": "Mileage", "importance": 27 + np.random.randint(-4, 5)},
+        {"name": "Make", "importance": 20 + np.random.randint(-3, 4)},
+        {"name": "Fuel Type", "importance": 10 + np.random.randint(-2, 3)},
+        {"name": "Transmission", "importance": 8 + np.random.randint(-2, 3)}
+    ]
+    
+    # Adjust based on the input values
+    current_year = 2023
+    year_int = int(year)
+    
+    # Year is more important for newer cars
+    if year_int > 2018:
+        importances[0]["importance"] += 5
+    
+    # Mileage is more important for high-mileage cars
+    if mileage > 100000:
+        importances[1]["importance"] += 8
+        importances[0]["importance"] -= 3
+    
+    # Premium makes have higher make importance
+    premium_makes = ["BMW", "Mercedes-Benz", "Audi", "Lexus", "Tesla"]
+    if make in premium_makes:
+        importances[2]["importance"] += 10
+        importances[0]["importance"] -= 5
+    
+    # Electric cars have higher fuel type importance
+    if fuel_type == "Electric":
+        importances[3]["importance"] += 12
+        importances[4]["importance"] -= 2
+    
+    # Normalize to ensure percentages add up to 100
+    total = sum(item["importance"] for item in importances)
+    for item in importances:
+        item["importance"] = round((item["importance"] / total) * 100)
+    
+    # Ensure no importance is less than 5%
+    for item in importances:
+        if item["importance"] < 5:
+            item["importance"] = 5
+    
+    # Re-normalize after establishing minimums
+    total = sum(item["importance"] for item in importances)
+    for item in importances:
+        item["importance"] = round((item["importance"] / total) * 100)
+    
+    # Sort by importance
+    return sorted(importances, key=lambda x: x["importance"], reverse=True)
+
 # Global variable to hold the ML model
 ml_model = None
 
@@ -204,9 +261,20 @@ async def get_prediction(car_data: CarData):
         confidence_score = 70 + (hash_val % 1000) / 40  # Range between 70-95
         confidence_score = min(max(confidence_score, 70), 95)  # Clamp between 70-95
         
+        # Get feature importance
+        feature_importance = get_feature_importance(
+            ml_model,
+            car_data.make,
+            car_data.fuelType,
+            car_data.transmission,
+            car_data.year,
+            car_data.mileage
+        )
+        
         return {
             "predictedPrice": round(predicted_price),
-            "confidenceScore": round(confidence_score, 1)
+            "confidenceScore": round(confidence_score, 1),
+            "featureImportance": feature_importance
         }
     except Exception as e:
         print(f"Prediction error: {str(e)}")

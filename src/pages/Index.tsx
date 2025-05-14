@@ -1,10 +1,11 @@
+
 import { useState, useEffect } from "react";
 import {
   CarPredictionForm,
   CarPredictionFormValues,
 } from "@/components/car/CarPredictionForm";
 import { PredictionResult } from "@/components/car/PredictionResult";
-import { predictCarPrice } from "@/lib/ml-model";
+import { predictCarPrice, FeatureImportance } from "@/lib/ml-model";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Car, Sparkles } from "lucide-react";
@@ -18,6 +19,7 @@ const Index = () => {
     price: number;
     confidence: number;
     formValues: CarPredictionFormValues;
+    featureImportance: FeatureImportance[];
   } | null>(null);
   const [apiStatus, setApiStatus] = useState<
     "checking" | "connected" | "disconnected"
@@ -53,6 +55,7 @@ const Index = () => {
         price: result.predictedPrice,
         confidence: result.confidenceScore,
         formValues,
+        featureImportance: result.featureImportance
       });
 
       if (apiStatus === "disconnected") {
@@ -129,6 +132,7 @@ const Index = () => {
                 confidenceScore={prediction.confidence}
                 formValues={prediction.formValues}
                 onNewPrediction={handleNewPrediction}
+                featureImportance={prediction.featureImportance}
               />
             )}
           </Card>
