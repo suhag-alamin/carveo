@@ -1,14 +1,13 @@
-
 /**
  * API configuration for the ML model
  */
 export const API_CONFIG = {
   // Use environment-specific API URL
-  BASE_URL: import.meta.env.PROD 
-    ? 'https://your-render-api-url.onrender.com' // Replace with your actual Render API URL
-    : 'http://localhost:8000',
+  BASE_URL: import.meta.env.PROD
+    ? "https://carveo-ml-api.onrender.com"
+    : "https://carveo-ml-api.onrender.com",
   ENDPOINTS: {
-    PREDICT: '/predict',
-    HEALTH: '/health'
-  }
+    PREDICT: "/predict",
+    HEALTH: "/health",
+  },
 };
