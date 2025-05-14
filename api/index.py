@@ -157,59 +157,91 @@ def train_model():
 
 # Function to calculate feature importance
 def get_feature_importance(model, make, fuel_type, transmission, year, mileage):
-    # This is a simple feature importance calculation based on our synthetic model
-    # In a real ML model, you would extract this from the model coefficients or feature importances
+    # This function calculates dynamic feature importance based on the input values
     
-    # Calculate feature importances
-    importances = [
-        {"name": "Year", "importance": 35 + np.random.randint(-5, 6)},
-        {"name": "Mileage", "importance": 27 + np.random.randint(-4, 5)},
-        {"name": "Make", "importance": 20 + np.random.randint(-3, 4)},
-        {"name": "Fuel Type", "importance": 10 + np.random.randint(-2, 3)},
-        {"name": "Transmission", "importance": 8 + np.random.randint(-2, 3)}
+    # Start with base importance values (these will be adjusted based on inputs)
+    importances = {}
+    
+    # Convert year to int for calculations
+    year_int = int(year)
+    current_year = 2023
+    age = current_year - year_int
+    
+    # Premium makes have different importance profiles
+    premium_makes = ["BMW", "Mercedes-Benz", "Audi", "Lexus", "Tesla"]
+    mid_tier_makes = ["Toyota", "Honda", "Volkswagen", "Subaru", "Mazda"]
+    
+    # Dynamic calculation of feature importance:
+    
+    # 1. Year importance - higher for newer cars, lower for older ones
+    year_importance = 30 - min(age * 0.7, 15)  # Decreases with age, but has a floor
+    
+    # 2. Mileage importance - increases with higher mileage
+    mileage_ratio = min(mileage / 150000, 1)  # Cap at 150k miles for calculation
+    mileage_importance = 15 + (mileage_ratio * 15)  # 15-30% importance based on mileage
+    
+    # 3. Make importance - premium brands have higher make importance
+    if make in premium_makes:
+        make_importance = 30  # Premium brands have high make importance
+    elif make in mid_tier_makes:
+        make_importance = 22  # Mid-tier brands have medium make importance
+    else:
+        make_importance = 15  # Budget brands have lower make importance
+    
+    # 4. Fuel type importance - higher for alternative fuels
+    if fuel_type == "Electric":
+        fuel_importance = 25  # Electric vehicles have high fuel type importance
+    elif fuel_type in ["Hybrid", "Plug-in Hybrid"]:
+        fuel_importance = 18  # Hybrids have medium-high fuel type importance
+    else:
+        fuel_importance = 10  # Conventional fuels have lower importance
+    
+    # 5. Transmission importance - varies by type
+    if transmission == "Automatic":
+        transmission_importance = 12
+    elif transmission == "CVT":
+        transmission_importance = 15
+    else:
+        transmission_importance = 8
+    
+    # Collect all importances
+    raw_importances = [
+        {"name": "Year", "importance": year_importance},
+        {"name": "Mileage", "importance": mileage_importance},
+        {"name": "Make", "importance": make_importance},
+        {"name": "Fuel Type", "importance": fuel_importance},
+        {"name": "Transmission", "importance": transmission_importance}
     ]
     
-    # Adjust based on the input values
-    current_year = 2023
-    year_int = int(year)
-    
-    # Year is more important for newer cars
-    if year_int > 2018:
-        importances[0]["importance"] += 5
-    
-    # Mileage is more important for high-mileage cars
-    if mileage > 100000:
-        importances[1]["importance"] += 8
-        importances[0]["importance"] -= 3
-    
-    # Premium makes have higher make importance
-    premium_makes = ["BMW", "Mercedes-Benz", "Audi", "Lexus", "Tesla"]
-    if make in premium_makes:
-        importances[2]["importance"] += 10
-        importances[0]["importance"] -= 5
-    
-    # Electric cars have higher fuel type importance
-    if fuel_type == "Electric":
-        importances[3]["importance"] += 12
-        importances[4]["importance"] -= 2
-    
-    # Normalize to ensure percentages add up to 100
-    total = sum(item["importance"] for item in importances)
-    for item in importances:
-        item["importance"] = round((item["importance"] / total) * 100)
-    
-    # Ensure no importance is less than 5%
-    for item in importances:
+    # Make sure no feature has less than 5% importance
+    for item in raw_importances:
         if item["importance"] < 5:
             item["importance"] = 5
+            
+    # Normalize to ensure percentages add up to 100%
+    total = sum(item["importance"] for item in raw_importances)
     
-    # Re-normalize after establishing minimums
-    total = sum(item["importance"] for item in importances)
-    for item in importances:
-        item["importance"] = round((item["importance"] / total) * 100)
+    normalized_importances = []
+    for item in raw_importances:
+        normalized_importance = round((item["importance"] / total) * 100)
+        normalized_importances.append({
+            "name": item["name"],
+            "importance": normalized_importance
+        })
     
-    # Sort by importance
-    return sorted(importances, key=lambda x: x["importance"], reverse=True)
+    # Sort by importance (descending)
+    normalized_importances.sort(key=lambda x: x["importance"], reverse=True)
+    
+    # Ensure the sum is exactly 100% (adjust the smallest value if needed)
+    total = sum(item["importance"] for item in normalized_importances)
+    if total != 100:
+        # Find the smallest importance
+        normalized_importances.sort(key=lambda x: x["importance"])
+        normalized_importances[0]["importance"] += (100 - total)
+        # Sort back by importance (descending)
+        normalized_importances.sort(key=lambda x: x["importance"], reverse=True)
+    
+    return normalized_importances
 
 # Global variable to hold the ML model
 ml_model = None
@@ -261,7 +293,7 @@ async def get_prediction(car_data: CarData):
         confidence_score = 70 + (hash_val % 1000) / 40  # Range between 70-95
         confidence_score = min(max(confidence_score, 70), 95)  # Clamp between 70-95
         
-        # Get feature importance
+        # Get feature importance - use our dynamic calculation function
         feature_importance = get_feature_importance(
             ml_model,
             car_data.make,
@@ -270,6 +302,8 @@ async def get_prediction(car_data: CarData):
             car_data.year,
             car_data.mileage
         )
+        
+        print(f"Feature importance calculated: {feature_importance}")
         
         return {
             "predictedPrice": round(predicted_price),

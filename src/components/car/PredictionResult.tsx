@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Check, TrendingUp, Info } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
@@ -77,22 +76,6 @@ export function PredictionResult({
     maximumFractionDigits: 0 
   });
 
-  // If feature importance is not provided, use fallback data
-  const getFeatureImportance = () => {
-    if (featureImportance && featureImportance.length > 0) {
-      return featureImportance;
-    }
-    
-    // Fallback to hardcoded data if no feature importance provided
-    return [
-      { name: "Year", importance: 35 },
-      { name: "Mileage", importance: 27 },
-      { name: "Make", importance: 20 },
-      { name: "Fuel Type", importance: 10 },
-      { name: "Transmission", importance: 8 }
-    ];
-  };
-
   return (
     <div className="space-y-6">
       <Card className="border-0 bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
@@ -156,7 +139,7 @@ export function PredictionResult({
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {getFeatureImportance().map((feature) => (
+            {featureImportance && featureImportance.map((feature) => (
               <div key={feature.name} className="space-y-1">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">

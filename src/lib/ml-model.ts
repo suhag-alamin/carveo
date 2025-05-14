@@ -17,6 +17,8 @@ export async function predictCarPrice(formValues: CarPredictionFormValues): Prom
   featureImportance: FeatureImportance[];
 }> {
   try {
+    console.log('Calling ML API at:', `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICT}`);
+    
     // Call the Python ML model API with the configured endpoint
     const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICT}`, {
       method: 'POST',
@@ -38,6 +40,8 @@ export async function predictCarPrice(formValues: CarPredictionFormValues): Prom
     }
     
     const result = await response.json();
+    console.log('API Response:', result);
+    
     return {
       predictedPrice: result.predictedPrice,
       confidenceScore: result.confidenceScore,
@@ -58,6 +62,8 @@ function simulatePrediction(formValues: CarPredictionFormValues): Promise<{
   confidenceScore: number;
   featureImportance: FeatureImportance[];
 }> {
+  console.log('Using simulation for prediction with values:', formValues);
+  
   // Simulate API call delay
   return new Promise(resolve => setTimeout(() => {
     // Base price starting point
@@ -104,56 +110,69 @@ function simulatePrediction(formValues: CarPredictionFormValues): Promise<{
     // Generate a confidence score (70-95%)
     const confidenceScore = 70 + Math.random() * 25;
     
-    // Generate simulated feature importance
-    const featureImportance: FeatureImportance[] = [];
+    // Generate truly dynamic feature importance based on the input data
+    let featureImportance: FeatureImportance[] = [];
     
-    // Year importance (higher for newer cars)
-    const yearImportance = 25 + (parseInt(formValues.year) - 2000) / 5;
+    // Calculate year importance (newer cars have higher year importance)
+    const yearValue = parseInt(formValues.year);
+    const yearImportance = Math.round(15 + ((yearValue - 2000) / 23) * 15);
     
-    // Mileage importance (higher for high-mileage cars)
-    const mileageImportance = 20 + (formValues.mileage > 100000 ? 10 : 0);
+    // Calculate mileage importance (higher for high-mileage cars)
+    const mileageImportance = Math.round(15 + (formValues.mileage / 200000) * 15);
     
-    // Make importance (higher for premium brands)
-    const makeImportance = premiumBrands.includes(formValues.make) ? 25 : 15;
+    // Calculate make importance (higher for premium brands)
+    const makeImportance = premiumBrands.includes(formValues.make) ? 30 : 
+                           midBrands.includes(formValues.make) ? 22 : 15;
     
-    // Fuel type importance (higher for electric/hybrid)
-    const fuelImportance = 
-      formValues.fuelType === "Electric" ? 20 : 
-      (formValues.fuelType === "Hybrid" || formValues.fuelType === "Plug-in Hybrid") ? 15 : 10;
+    // Calculate fuel type importance
+    let fuelImportance = 10;
+    if (formValues.fuelType === "Electric") {
+      fuelImportance = 25;
+    } else if (formValues.fuelType === "Hybrid" || formValues.fuelType === "Plug-in Hybrid") {
+      fuelImportance = 18;
+    }
     
-    // Transmission importance
-    const transmissionImportance = 10;
+    // Transmission importance varies less
+    const transmissionImportance = formValues.transmission === "Automatic" ? 12 : 8;
     
     // Normalize to ensure they add up to 100%
-    const total = yearImportance + mileageImportance + makeImportance + fuelImportance + transmissionImportance;
+    const totalImportance = yearImportance + mileageImportance + makeImportance + 
+                            fuelImportance + transmissionImportance;
     
-    featureImportance.push({ 
-      name: "Year", 
-      importance: Math.round((yearImportance / total) * 100)
-    });
-    
-    featureImportance.push({ 
-      name: "Mileage", 
-      importance: Math.round((mileageImportance / total) * 100)
-    });
-    
-    featureImportance.push({ 
-      name: "Make", 
-      importance: Math.round((makeImportance / total) * 100)
-    });
-    
-    featureImportance.push({ 
-      name: "Fuel Type", 
-      importance: Math.round((fuelImportance / total) * 100)
-    });
-    
-    featureImportance.push({ 
-      name: "Transmission", 
-      importance: Math.round((transmissionImportance / total) * 100)
-    });
+    featureImportance = [
+      {
+        name: "Year",
+        importance: Math.round((yearImportance / totalImportance) * 100)
+      },
+      {
+        name: "Mileage",
+        importance: Math.round((mileageImportance / totalImportance) * 100)
+      },
+      {
+        name: "Make",
+        importance: Math.round((makeImportance / totalImportance) * 100)
+      },
+      {
+        name: "Fuel Type",
+        importance: Math.round((fuelImportance / totalImportance) * 100)
+      },
+      {
+        name: "Transmission",
+        importance: Math.round((transmissionImportance / totalImportance) * 100)
+      }
+    ];
     
     // Sort by importance (descending)
     featureImportance.sort((a, b) => b.importance - a.importance);
+    
+    // Ensure percentages sum to 100% (adjust the last element if needed)
+    const sum = featureImportance.reduce((total, item) => total + item.importance, 0);
+    if (sum !== 100) {
+      const lastItem = featureImportance[featureImportance.length - 1];
+      lastItem.importance += (100 - sum);
+    }
+    
+    console.log('Simulated feature importance:', featureImportance);
     
     resolve({
       predictedPrice,
