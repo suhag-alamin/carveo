@@ -19,6 +19,10 @@ export async function predictCarPrice(formValues: CarPredictionFormValues): Prom
   try {
     console.log('Calling ML API at:', `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICT}`);
     
+    // Set a timeout to prevent long waiting times for the API
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
     // Call the Python ML model API with the configured endpoint
     const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PREDICT}`, {
       method: 'POST',
@@ -33,7 +37,10 @@ export async function predictCarPrice(formValues: CarPredictionFormValues): Prom
         fuelType: formValues.fuelType,
         transmission: formValues.transmission,
       }),
+      signal: controller.signal,
     });
+    
+    clearTimeout(timeoutId);
     
     if (!response.ok) {
       throw new Error('API request failed');
